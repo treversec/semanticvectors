@@ -333,7 +333,14 @@ public class TermTermVectorsFromLucene { //implements VectorStore {
         Vector toSuperpose = elementalTermVectors.getVector(coterm);
         
         float globalweight = luceneUtils.getGlobalTermWeight(new Term(field, coterm));
- 
+        
+        //weight according to distance from focusterm
+        double rampedweight = 1;
+        if (flagConfig.rampedwindow())
+        	{rampedweight =     (1+flagConfig.windowradius() - Math.abs(cursor - focusposn)) / 
+        						(double) flagConfig.windowradius();
+        		}
+        
         // bind to appropriate position vector
         if (flagConfig.positionalmethod() == PositionalMethod.PROXIMITY) {
             toSuperpose =  elementalTermVectors.getVector(coterm).copy();
@@ -345,15 +352,15 @@ public class TermTermVectorsFromLucene { //implements VectorStore {
         if (flagConfig.positionalmethod() == PositionalMethod.BASIC
             || flagConfig.positionalmethod() == PositionalMethod.PERMUTATIONPLUSBASIC
             	||flagConfig.positionalmethod() == PositionalMethod.PROXIMITY) {
-          semanticTermVectors.getVector(focusterm).superpose(toSuperpose, globalweight, null);
+          semanticTermVectors.getVector(focusterm).superpose(toSuperpose, globalweight*rampedweight, null);
         }
         if (flagConfig.positionalmethod() == PositionalMethod.PERMUTATION
             || flagConfig.positionalmethod() == PositionalMethod.PERMUTATIONPLUSBASIC) {
           int[] permutation = permutationCache[cursor - focusposn + flagConfig.windowradius()];
-          semanticTermVectors.getVector(focusterm).superpose(toSuperpose, globalweight, permutation);
+          semanticTermVectors.getVector(focusterm).superpose(toSuperpose, globalweight*rampedweight, permutation);
         } else if (flagConfig.positionalmethod() == PositionalMethod.DIRECTIONAL) {
           int[] permutation = permutationCache[(int) Math.max(0,Math.signum(cursor - focusposn))];
-          semanticTermVectors.getVector(focusterm).superpose(toSuperpose, globalweight, permutation);
+          semanticTermVectors.getVector(focusterm).superpose(toSuperpose, globalweight*rampedweight, permutation);
 
            }
       } //end of current sliding window   

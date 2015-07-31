@@ -303,6 +303,12 @@ public class FlagConfig {
   /** If true, matching of query terms is case-sensitive; otherwise case-insensitive, default false. */
   public boolean matchcase() { return matchcase; }
 
+  private boolean rampedwindow = false;
+  /** If true, superpositions in sliding window model will be weighted by a factor of (distance from
+   * focus word)/(windowsize) - there's precedent for this sort of thing in some of the HAL experiments,
+   * and more recently in the word embeddings work */
+  public boolean rampedwindow() { return rampedwindow; }
+  
   private String batchcompareseparator = "\\|";
   /** Separator for documents on a single line in batch comparison mode, default '\\|' (as a regular expression for '|'). */
   public String batchcompareseparator() { return batchcompareseparator; }
