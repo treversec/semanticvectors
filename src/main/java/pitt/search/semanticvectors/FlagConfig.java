@@ -309,6 +309,14 @@ public class FlagConfig {
    * and more recently in the word embeddings work */
   public boolean rampedwindow() { return rampedwindow; }
   
+  private boolean addelemental = false;
+  /** If true, the elemental vector for a term will be added to its semantic vector at the end of training
+   *  a sliding window model - this encodes first-order cooccurrence - evidence that this may be a useful thing
+   *  to do is provided in Levy, Goldberg, Dagan (2015) - "Improving Distributional Similarity with Lessons
+   *  Learned from Word Embeddings"
+   * */
+  public boolean addelemental() { return addelemental; }
+  
   private String batchcompareseparator = "\\|";
   /** Separator for documents on a single line in batch comparison mode, default '\\|' (as a regular expression for '|'). */
   public String batchcompareseparator() { return batchcompareseparator; }

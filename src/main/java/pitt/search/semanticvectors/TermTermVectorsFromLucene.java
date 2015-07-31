@@ -256,7 +256,17 @@ public class TermTermVectorsFromLucene { //implements VectorStore {
     VerbatimLogger.info("Normalizing term vectors.\n");
     Enumeration<ObjectVector> e = semanticTermVectors.getAllVectors();
     while (e.hasMoreElements())	{
-      e.nextElement().getVector().normalize();
+      ObjectVector temp = e.nextElement();
+      		 	   temp.getVector().normalize();
+      
+       //add the elemental vector to encode first-order co-occurrence
+      if (flagConfig.addelemental())
+      { 
+    	  temp.getVector().superpose(elementalTermVectors.getVector(temp.getObject()),1,null);
+      	  temp.getVector().normalize();
+      }
+    	  
+      
     }
 
     // If building a permutation index, these need to be written out to be reused.
