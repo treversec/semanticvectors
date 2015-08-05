@@ -61,7 +61,7 @@ public class PairwiseCorrelation {
 		//read reference pairs, calculate similarities, or output to .err if vectors not found
 		while (inline != null)
 		{
-			String[] components = inline.toLowerCase().split(",");
+			String[] components = inline.toLowerCase().split(",|\t");
 			paircount++;
 			
 			try {
