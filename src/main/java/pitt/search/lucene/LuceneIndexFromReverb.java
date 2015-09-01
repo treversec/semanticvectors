@@ -106,14 +106,15 @@ public class LuceneIndexFromReverb {
   static void indexDoc(IndexWriter fsWriter, File triplesTextFile) throws IOException {
     BufferedReader theReader = new BufferedReader(new FileReader(triplesTextFile));
     int linecnt = 0;
-    String lineIn;
-    while ((lineIn = theReader.readLine()) != null)  {   
+    String lineIn = "";
+    while ((lineIn  = theReader.readLine()) != null)  {   
     
     	// Output progress counter.
       if( ( ++linecnt % 10000 == 0 ) || ( linecnt < 10000 && linecnt % 1000 == 0 ) ){
         VerbatimLogger.info((linecnt) + " ... ");
       }
       
+          
       String[] tokenizedLine = lineIn.split("\t");
            
       try {
@@ -135,9 +136,6 @@ public class LuceneIndexFromReverb {
          Document doc = new Document();
      	
 		doc.add(new TextField("PMID",PMID, Field.Store.YES));
-        doc.add(new TextField("tokenized_subject", subject, Field.Store.YES));
-        doc.add(new TextField("tokenized_predicate", predicate, Field.Store.YES));
-        doc.add(new TextField("tokenized_object", object, Field.Store.YES));
         
         String subject_copy   = subject.replaceAll(" ", "_");
         String predicate_copy = predicate.replaceAll(" ", "_").toUpperCase();
@@ -158,13 +156,22 @@ public class LuceneIndexFromReverb {
 		ft.setStoreTermVectors(true);
 		ft.setStoreTermVectorPositions(true);
 		Field contentsField = new Field("source", source, ft);
-		doc.add(contentsField);
+		Field tsubField = new Field("tokenized_subject", subject, ft);
+		Field tobjField = new Field("tokenized_object", object, ft);
+		Field tpredField = new Field("tokenized_predicate", predicate, ft);
+		  
+		doc.add(tsubField);
+	    doc.add(tobjField);
+	    doc.add(tpredField);
+	    doc.add(contentsField);
 		fsWriter.addDocument(doc);
       }
       catch (Exception e) {
         System.out.println(lineIn);
         e.printStackTrace();
       }
+      
+  
     }
     VerbatimLogger.info("\n");  // Newline after line counter prints.
     theReader.close();
