@@ -254,30 +254,33 @@ public class PSITOK {
       String theTerm = text.utf8ToString();
       if (!elementalItemVectors.containsVector(theTerm)) continue;
       DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(null, null);
-      if (docsAndPositions == null) return semanticVector;
+      if (docsAndPositions == null) continue;
       docsAndPositions.nextDoc();
       freqs.add(docsAndPositions.freq());
       localTerms.add(theTerm); 
 
       for (int x = 0; x < docsAndPositions.freq(); x++) {
-        localTermPositions.put(new Integer(docsAndPositions.nextPosition()), termcount);
-      }
+    	   localTermPositions.put(new Integer(docsAndPositions.nextPosition()), termcount);
+    }
 
+ 
+         
       termcount++;
+        
     }
 
     // Iterate through positions adding index vectors of terms
     // occurring within window to term vector for focus term
-    for (int cursor = 0; cursor < localTermPositions.size(); ++cursor) {
-      if (localTermPositions.get(cursor) == null) continue;
-      
-        if (localTermPositions.get(cursor) == null) continue;
+    for (int cursor = 0; cursor < localTermPositions.size(); cursor++) {
+     
+    	if (!localTermPositions.containsKey(cursor)) continue;
         String coterm = localTerms.get(localTermPositions.get(cursor));
+        
         if (coterm == null) continue;
+        
         Vector toSuperpose = elementalItemVectors.getVector(coterm);
         
         float globalweight = luceneUtils.getGlobalTermWeight(new Term(field, coterm));
-        
         //weight according to distance from focusterm
         double rampedweight = 1;
       
@@ -322,7 +325,7 @@ public class PSITOK {
 	      String theTerm = text.utf8ToString();
 	      if (!semanticItemVectors.containsVector(theTerm)) continue;
 	      DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(null, null);
-	      if (docsAndPositions == null) return;
+	      if (docsAndPositions == null) continue;
 	      docsAndPositions.nextDoc();
 	      freqs.add(docsAndPositions.freq());
 	      localTerms.add(theTerm); 
