@@ -63,7 +63,7 @@ public class PSITOK {
   private static final Logger logger = Logger.getLogger(PSITOK.class.getCanonicalName());
   private FlagConfig flagConfig;
   private ElementalVectorStore elementalItemVectors;
-  private VectorStoreRAM predicateVectors;
+  private ElementalVectorStore predicateVectors;
   private VectorStoreRAM semanticItemVectors;
   private static final String SUBJECT_FIELD = "tokenized_subject";
   private static final String PREDICATE_FIELD = "tokenized_predicate";
@@ -90,7 +90,7 @@ public class PSITOK {
     // Create elemental and semantic vectors for each concept, and elemental vectors for predicates
     elementalItemVectors = new ElementalVectorStore(flagConfig);
     semanticItemVectors = new VectorStoreRAM(flagConfig);
-    predicateVectors = new VectorStoreRAM(flagConfig);
+    predicateVectors = new ElementalVectorStore(flagConfig);
     flagConfig.setContentsfields(itemFields);
 
     HashSet<String> addedConcepts = new HashSet<String>();
@@ -340,18 +340,16 @@ public class PSITOK {
 	        localTermPositions.put(new Integer(docsAndPositions.nextPosition()), termcount);
 	      }
 
-	      termcount++;///////////.
+	      termcount++;
 	    }
 
 	    // Iterate through positions adding index vectors of terms
 	    // occurring within window to term vector for focus term
-	    System.out.print(field+" ");
-	    
+	     
 	    for (int cursor = 0; cursor < localTermPositions.size(); ++cursor) {
 	      if (localTermPositions.get(cursor) == null) continue;
 	      
 	         String coterm = localTerms.get(localTermPositions.get(cursor));
-	         System.out.print(coterm+" ");
 	         if (coterm == null) continue;
 	        
 	        float globalweight = 1; 
@@ -359,8 +357,7 @@ public class PSITOK {
 	      
 	      } //end of current sliding window   
 	  
-	  
-    System.out.println();
+
   }
   
 }
