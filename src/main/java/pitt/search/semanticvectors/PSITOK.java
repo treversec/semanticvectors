@@ -63,6 +63,7 @@ public class PSITOK {
   private static final Logger logger = Logger.getLogger(PSITOK.class.getCanonicalName());
   private FlagConfig flagConfig;
   private ElementalVectorStore elementalItemVectors;
+  private VectorStoreRAM predicateVectors;
   private VectorStoreRAM semanticItemVectors;
   private static final String SUBJECT_FIELD = "tokenized_subject";
   private static final String PREDICATE_FIELD = "tokenized_predicate";
@@ -89,6 +90,7 @@ public class PSITOK {
     // Create elemental and semantic vectors for each concept, and elemental vectors for predicates
     elementalItemVectors = new ElementalVectorStore(flagConfig);
     semanticItemVectors = new VectorStoreRAM(flagConfig);
+    predicateVectors = new VectorStoreRAM(flagConfig);
     flagConfig.setContentsfields(itemFields);
 
     HashSet<String> addedConcepts = new HashSet<String>();
@@ -133,7 +135,7 @@ public class PSITOK {
         continue;
       }
 
-      elementalItemVectors.getVector(term.text().trim());
+      predicateVectors.getVector(term.text().trim());
 
       // Add an inverse vector for the predicates.
      // elementalItemVectors.getVector(term.text().trim()+"-INV");
@@ -163,13 +165,13 @@ public class PSITOK {
       
       //assemble relevant elemental vectors
       Terms sTerms = luceneUtils.getTermVector(termDocs.docID(), "tokenized_subject");
-      Vector tokenized_subject = processTermPositionVector(sTerms,"tokenized_subject");
-         
+      Vector tokenized_subject = processTermPositionVector(sTerms,"tokenized_subject", true);
+     
       Terms oTerms = luceneUtils.getTermVector(termDocs.docID(), "tokenized_object");
-      Vector tokenized_object = processTermPositionVector(oTerms,"tokenized_object");
-    
+      Vector tokenized_object = processTermPositionVector(oTerms,"tokenized_object", true);
+     
       Terms pTerms = luceneUtils.getTermVector(termDocs.docID(), "tokenized_predicate");
-      Vector tokenized_predicate = processTermPositionVector(pTerms,"tokenized_predicate");
+      Vector tokenized_predicate = processTermPositionVector(pTerms,"tokenized_predicate", false);
     
       
 
@@ -187,7 +189,7 @@ public class PSITOK {
  
     
 
-      processArguments(oTerms, "tokenized_object", tokenized_predicate, tokenized_subject);
+      processArguments(oTerms, "tokenized_object",  tokenized_predicate, tokenized_subject);
       processArguments(sTerms, "tokenized_subject", tokenized_predicate, tokenized_object);
       
       
@@ -201,7 +203,7 @@ public class PSITOK {
 
     VectorStoreWriter.writeVectors("tok"+flagConfig.elementalvectorfile(), flagConfig, elementalItemVectors);
     VectorStoreWriter.writeVectors("tok"+flagConfig.semanticvectorfile(), flagConfig, semanticItemVectors);
-   
+    VectorStoreWriter.writeVectors("tok"+flagConfig.predicatevectorfile(), flagConfig, predicateVectors);
     VerbatimLogger.info("Finished writing vectors.\n");
   }
 
@@ -235,24 +237,27 @@ public class PSITOK {
    * will be referred to as the 'local index' in comments.
    * @throws IOException 
    */
-  private Vector processTermPositionVector(Terms terms, String field)
+  private Vector processTermPositionVector(Terms terms, String field, boolean toWeight)
       throws ArrayIndexOutOfBoundsException, IOException {
    
     ArrayList<String> localTerms = new ArrayList<String>();
     ArrayList<Integer> freqs = new ArrayList<Integer>();
     Hashtable<Integer, Integer> localTermPositions = new Hashtable<Integer, Integer>();
 
+    VectorStore lookupVectors 		= elementalItemVectors;
+    if (!toWeight) lookupVectors	= predicateVectors;
+    
     Vector semanticVector = VectorFactory.createZeroVector(flagConfig.vectortype(), flagConfig.dimension());
     if (terms == null) return semanticVector;
 
-    
     TermsEnum termsEnum = terms.iterator(null);
     BytesRef text;
     int termcount = 0;
 
     while((text = termsEnum.next()) != null) {
       String theTerm = text.utf8ToString();
-      if (!elementalItemVectors.containsVector(theTerm)) continue;
+      if (!lookupVectors.containsVector(theTerm)) continue;
+     
       DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(null, null);
       if (docsAndPositions == null) continue;
       docsAndPositions.nextDoc();
@@ -263,31 +268,32 @@ public class PSITOK {
     	   localTermPositions.put(new Integer(docsAndPositions.nextPosition()), termcount);
     }
 
- 
+     
          
       termcount++;
         
     }
 
+  
     // Iterate through positions adding index vectors of terms
     // occurring within window to term vector for focus term
     for (int cursor = 0; cursor < localTermPositions.size(); cursor++) {
      
     	if (!localTermPositions.containsKey(cursor)) continue;
         String coterm = localTerms.get(localTermPositions.get(cursor));
-        
+       
         if (coterm == null) continue;
         
-        Vector toSuperpose = elementalItemVectors.getVector(coterm);
+        Vector toSuperpose = lookupVectors.getVector(coterm);
         
-        float globalweight = luceneUtils.getGlobalTermWeight(new Term(field, coterm));
-        //weight according to distance from focusterm
-        double rampedweight = 1;
-      
-          semanticVector.superpose(toSuperpose, globalweight*rampedweight, null);
+        float globalweight = 1;
+        
+        if (toWeight) globalweight = luceneUtils.getGlobalTermWeight(new Term(field, coterm));
+         semanticVector.superpose(toSuperpose, globalweight, null);
       
       } //end of current sliding window   
   
+   
     semanticVector.normalize();
     return semanticVector;
     
@@ -324,7 +330,7 @@ public class PSITOK {
 	    while((text = termsEnum.next()) != null) {
 	      String theTerm = text.utf8ToString();
 	      if (!semanticItemVectors.containsVector(theTerm)) continue;
-	      DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(null, null);
+	      DocsAndPositionsEnum docsAndPsemanticItemositions = termsEnum.docsAndPositions(null, null);
 	      if (docsAndPositions == null) continue;
 	      docsAndPositions.nextDoc();
 	      freqs.add(docsAndPositions.freq());
@@ -334,24 +340,27 @@ public class PSITOK {
 	        localTermPositions.put(new Integer(docsAndPositions.nextPosition()), termcount);
 	      }
 
-	      termcount++;
+	      termcount++;///////////.
 	    }
 
 	    // Iterate through positions adding index vectors of terms
 	    // occurring within window to term vector for focus term
+	    System.out.print(field+" ");
+	    
 	    for (int cursor = 0; cursor < localTermPositions.size(); ++cursor) {
 	      if (localTermPositions.get(cursor) == null) continue;
 	      
 	         String coterm = localTerms.get(localTermPositions.get(cursor));
+	         System.out.print(coterm+" ");
 	         if (coterm == null) continue;
 	        
-	        float globalweight = luceneUtils.getGlobalTermWeight(new Term(field, coterm));
+	        float globalweight = 1; 
 	          semanticItemVectors.getVector(coterm).superpose(boundProduct, globalweight, null);
 	      
 	      } //end of current sliding window   
 	  
 	  
-    
+    System.out.println();
   }
   
 }
