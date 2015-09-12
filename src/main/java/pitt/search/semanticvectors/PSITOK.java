@@ -330,7 +330,7 @@ public class PSITOK {
 	    while((text = termsEnum.next()) != null) {
 	      String theTerm = text.utf8ToString();
 	      if (!semanticItemVectors.containsVector(theTerm)) continue;
-	      DocsAndPositionsEnum docsAndPsemanticItemositions = termsEnum.docsAndPositions(null, null);
+	      DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(null, null);
 	      if (docsAndPositions == null) continue;
 	      docsAndPositions.nextDoc();
 	      freqs.add(docsAndPositions.freq());
