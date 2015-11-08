@@ -847,7 +847,7 @@ public class BinaryVector implements Vector {
   }
 
   //access bitset directly
-  protected FixedBitSet getCoordinates() {
+  public FixedBitSet getCoordinates() {
 	// TODO Auto-generated method stub
 	return this.bitSet;
 }
